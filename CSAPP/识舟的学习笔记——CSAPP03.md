@@ -28,3 +28,24 @@ PS：目前处理器常用的另一大类是ARM（Acorn RISC Machine），其中
 
 #### Compiling Into Assembly
 
+以下这张图简单展示了编译的过程：
+
+![一个高级语言转化为汇编语言的实例](https://cdn.jsdelivr.net/gh/vedal1015-cell/blog_resourses_pub@main/note_for_study/CSAPP/Machine_Level_Programing/CSAPP_Class3_Picture1.png)
+
+左边是C代码，右边则是汇编代码。我们可以看到右边有很多%，这些%是寄存器是实际名称，而前面的内容则说明了要对寄存器执行的操作，比如pushq是把他推到栈上，movq是把他从一个地方复制到另外一个地方，call是调用一些方法，popq是出栈，ret是从特定函数返回。
+
+我们可以输入一行代码来实现这种转换：
+
+```
+gcc -Og -S sum.c
+```
+
+这行命令行代码告诉编译器将C代码转换为汇编代码。gcc会调用一个程序序列来完成编译的不同阶段。后面的-S是停止（Stop）的意思，说明只完成gcc的第一阶段，即把C转化为汇编代码。-Og的作用是一种规范，告诉编译器做什么优化，这里表示按照原C代码生成汇编代码。
+
+#### Assembly Characteristics
+
+汇编代码有以下几个方面的特点：
+
+##### Data Types
+
+汇编代码有多种整型数据类型大小为1字节，2字节，4字节和8字节
