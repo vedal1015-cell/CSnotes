@@ -77,11 +77,9 @@ x86-64用下面这一套寄存器：
 
 PS：前8个寄存器有特定的名字，而后8个寄存器由数字表示，这是历史传统原因。
 
-#### Assembly Operations
+#### Moving Data
 
-对寄存器进行操作的指令主要有以下这些：
-
-##### Moving Data
+关于最常见的movq指令：
 
 mov指令有三种，可以把源从一个数据复制到目标。源和目标可以是被编入程序的立即数（immediate），可以是寄存器或者内存。
 
@@ -134,3 +132,40 @@ PS：这个表示方法在数组中很常用。
 | `(%rdx,%rcx)`   | `0xf000 + 0x100`    | `0xf100`  |
 | `(%rdx,%rcx,4)` | `0xf000 + 4*0x100`  | `0xf400`  |
 | `0x80(,%rdx,2)` | `2*0xf000 + 0x80`   | `0x1e080` |
+
+#### Address computation Instruction
+
+关于lea指令（load effective address）：
+
+这个lea指令的目标是通过C的&符号来计算地址，他的格式看起来像一个有源和目的地的mov指令，但是目的地只能是寄存器，实现的效果看起来是从内存中读取数据并载入到寄存器中，实际上寄存器中存储的是地址值。。
+
+举个例子：`leaq (%rdi,%rdi,2)` ⇒ %rax # t <- x + x*2
+
+#### Some Arithmetic Operations
+
+其他运算方面的指令看起来会相对简单一些，都是两个或者参数。
+
+两个参数的指令格式是源（Src）放在目标（Dest）之前。各种指令见下表：
+
+| Format  | Computation                        |
+| :------ | :--------------------------------- |
+| `addq`  | `Src,Dest`    `Dest = Dest + Src`  |
+| `subq`  | `Src,Dest`    `Dest = Dest - Src`  |
+| `imulq` | `Src,Dest`    `Dest = Dest * Src`  |
+| `salq`  | `Src,Dest`    `Dest = Dest << Src` |
+| `sarq`  | `Src,Dest`    `Dest = Dest >> Src` |
+| `shrq`  | `Src,Dest`    `Dest = Dest >> Src` |
+| `xorq`  | `Src,Dest`    `Dest = Dest ^ Src`  |
+| `andq`  | `Src,Dest`    `Dest = Dest & Src`  |
+| `orq`   | `Src,Dest`    `Dest = Dest | Src`  |
+
+一个参数的指令就像C中的一样，用来执行一些简单的操作。指令见下表：
+
+| Instruction | Operand | Computation       |
+| :---------- | :------ | :---------------- |
+| `incq`      | `Dest`  | `Dest = Dest + 1` |
+| `decq`      | `Dest`  | `Dest = Dest - 1` |
+| `negq`      | `Dest`  | `Dest = - Dest`   |
+| `notq`      | `Dest`  | `Dest = ~Dest`    |
+
+PS：注意notq是C中的**~**这个是位运算，不是**！**运算。
