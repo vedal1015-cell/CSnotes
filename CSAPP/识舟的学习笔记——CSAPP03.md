@@ -190,3 +190,116 @@ PS：其中sarq是算术右移（填符号位）、shrq是逻辑右移（补0）
 | `notq`      | `Dest`  | `Dest = ~Dest`    |
 
 PS：注意notq是C中的**~**这个是位运算，不是**！**运算。
+
+### Control
+
+#### Condition Codes
+
+x64-64有以下16个寄存器，我们现在先了解`%rsp`、`%rip`。
+
+| 0 ~ 7 Register | 8 ~ 15 Register |
+| --- | --- |
+| `%rax` | `%r8` |
+| `%rbx` | `%r9` |
+| `%rcx` | `%r10` |
+| `%rdx` | `%r11` |
+| `%rsi` | `%r12` |
+| `%rdi` | `%r13` |
+| `%rsp` | `%r14` |
+| `%rbp` | `%r15` |
+
+%rsp：%rsp中存的是栈指针，用来指示程序执行到的位置。
+
+%rip：包含当前执行指令的地址，正常方法一般没法访问。
+
+##### Implicit Setting
+
+条件代码，也叫PC指针，根据其他指令执行的结果来设置。条件操作标志是决定条件操作的基础。在学习条件代码之前我们先来看以下四个条件操作标志：
+
+CF：进位标志（carry flag），当我们把两个很大的无符号数相加时，可能会超出数据结构的范围，导致产生额外的位数，这就是进位。
+
+ZF：零位标志（zero flag），当计算的结果为零时，零标志位就会被置位。
+
+SF：符号标志（sign flag），如果计算结果最高位为1，那么说明结果为负值，此时符号标志就会被置1。
+
+OF：溢出标志（overflow flag），如果计算有符号数的运算结果溢出，溢出标志就会置1。
+
+我们因此会发现，CF和OF都用来表示计算结果是否溢出，只不过一个是无符号数一个是有符号数。
+
+许多指令都会设置这4个标志，除了lea指令。一般而言，我们进行条件操作时就要用到这四个标志，因此，也有一些用来是设置条件码的特殊指令，比如cmp。cmp和减法指令很像，但是他不会对得到的结果进行赋值之类的操作，他只会在进行减法之后设置标志位
+
+PS：q结尾的指令表示对64为数进行操作，q就是quadword（四字）的缩写。
+PS：x86有两种汇编代码语言，一种主要被微软和因特尔使用，另一种主要被linux使用，这门课程主要使用第二种。两种语言主要的差异在风格和参数方面。
+
+现在我们简单了解一些有关代码
+
+* test
+
+  格式：testq Src2, Src1
+
+  test指令用来设置条件标志，testq b, a会计算a&b的值，然后设置ZF和SF。比较常见的用法是把两个参数设置为同一个参数（testq a, a的形式），这样可以判断a是零，正数，还是负数。其中ZF可以判断是不是零，SF可以判断正负。
+  
+* setX
+
+  格式：setX Src
+
+  setX类型的指令用来读取和使用条件码，应当注意的是一般没法直接读取条件寄存器中的状态码，但可以通过其他方法检查条件码，比如这里的setX类型指令。此处set类型指令作用是根据条件码的取值将单个寄存器的单个字节设置为0或1，由于setX指令根据条件码来设置取值，因此常常被利用来判断条件码的值。setX指令有很多，详情见下表：
+
+  | SetX  | Condition      | Description               |
+  | :---- | :------------- | :------------------------ |
+  | sete  | ZF             | Equal / Zero              |
+  | setne | ~ZF            | Not Equal / Not Zero      |
+  | sets  | SF             | Negative                  |
+  | setns | ~SF            | Nonnegative               |
+  | setg  | ~ (SF^OF) &~ZF | Greater (Signed)          |
+  | setge | ~ (SF^OF)      | Greater or Equal (Signed) |
+  | setl  | (SF^OF)        | Less (Signed)             |
+  | setle | (SF^OF) \| ZF  | Less or Equal (Signed)    |
+  | seta  | ~CF&~ZF        | Above (unsigned)          |
+  | setb  | CF             | Below (unsigned)          |
+
+  现在我们来看一个例子：
+
+  C代码中我们要实现这样一个程序
+
+  ```c
+  int gt (long x, long y) {
+  	return x > y;
+  }
+  ```
+
+  其中x对应%rdi，y对应%rsi，返回值存在%rax
+
+  ```
+  cmpq %rsi, %rdi       # 比较x：y，注意y在x前面
+  	 setg	%al
+  	 movzbl	%al, %eax # mov指令可以实现单字节扩展的功能，在这里用来把%eax剩下的位数补0，你可能记得%eax是%rax的低32位，而x86-64在低32位被设置时会自发把高32位置0
+  	 ret
+  ```
+
+#### Condition Branches
+
+条件语句实际上有两种实现方式，我们先来看通用的那种传统方式。
+
+##### jump指令
+
+jump类指令在条件码满足条件时就会跳转。格式是jX Src1, Src2这样。
+
+| jX   | Condition      | Description               |
+| :--- | :------------- | :------------------------ |
+| jmp  | 1              | Unconditional             |
+| je   | ZF             | Equal / Zero              |
+| jne  | ~ZF            | Not Equal / Not Zero      |
+| js   | SF             | Negative                  |
+| jns  | ~SF            | Nonnegative               |
+| jg   | ~ (SF^OF) &~ZF | Greater (Signed)          |
+| jge  | ~ (SF^OF)      | Greater or Equal (Signed) |
+| jl   | (SF^OF)        | Less (Signed)             |
+| jle  | (SF^OF) \| ZF  | Less or Equal (Signed)    |
+| ja   | ~CF&~ZF        | Above (unsigned)          |
+| jb   | CF             | Below (unsigned)          |
+
+#### Loops
+
+#### Switch Statements
+
